@@ -1,0 +1,42 @@
+name: taxonomy-engine
+
+services:
+  app:
+    build: .
+    image: taxonomy-engine:latest
+    ports:
+      - "5100:5100" # API (remove for production)
+    environment:
+      - APP_OLLAMA_URL=http://ollama:11434 # use http://localhost:11434 for local development
+      - APP_LOG_LEVEL=INFO
+      # Dev settings
+      - APP_DEV_MODE=true
+      - APP_MOCK_LLM=false
+      - APP_MOCK_OUTPUT=false
+      - APP_MODEL_NAME=mistral-small3.2:latest
+    volumes:
+      - ./app:/taxonomy-engine/app
+    command: ["bash", "-c", "python app/api/main.py"]
+    restart: unless-stopped
+
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    profiles:
+      - ollama  # Use this profile if there is no external Ollama container
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  ollama:
+    external: true
